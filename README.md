@@ -5,7 +5,7 @@ Maider Delera Hernandez
 
 Lortu duzue arazoa konpontzea       BAI
 
-Zenbat ordu sartu dituzue marroia konpontzeko? ~5h
+Zenbat ordu sartu dituzue marroia konpontzeko? ~9h
 
 Github repositorioa:
 https://github.com/SIProiektua/2marroia25.git
