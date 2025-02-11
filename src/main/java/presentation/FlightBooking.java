@@ -37,6 +37,8 @@ import java.awt.event.ItemEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import dataBase.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 //GALDETU ZE BERTSIO ERABILI BEHAR DUGUN METODOA EGIN AHAL IZATEKO
 
@@ -61,6 +63,7 @@ public class FlightBooking extends JFrame {
 	private DefaultComboBoxModel<String> nextdate = new DefaultComboBoxModel<String>();
 	private JTextField year = null;
 	private ConcreteFlight cf;
+	private Collection<ConcreteFlight> savercollect;
 	private JRadioButton bussinesTicket = null;
 	private JRadioButton firstTicket = null;
 	private JRadioButton touristTicket = null;
@@ -68,11 +71,10 @@ public class FlightBooking extends JFrame {
 	private ConcreteFlight datuBasekoCF;
 	private JButton lookforFlights = null;
 	private DefaultListModel<ConcreteFlight> flightInfo = new DefaultListModel<ConcreteFlight>();
-	// private ConcreteFlight[] cfa = new ConcreteFlight[Integer.MAX_VALUE];
 	private JList<ConcreteFlight> flightList = null;
 	private JComboBox<ConcreteFlight> flightList_1;
 	private JButton bookFlight = null;
-
+	private boolean aldatu = false;
 	private Collection<ConcreteFlight> concreteFlightCollection;
 
 	private FlightManager businessLogic; // @jve:decl-index=0:
@@ -122,7 +124,18 @@ public class FlightBooking extends JFrame {
 	 */
 	private FlightBooking() {
 		datuBasea db = new datuBasea();
-		db.startDataBase();
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				datuBasea.clearDatabase();
+				db.close();
+			}
+			
+			@Override
+			public void windowActivated(WindowEvent e) {
+				db.startDataBase();
+			}
+		});
 		businessLogic = new FlightManager();
 		setTitle("Book Flight");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -148,7 +161,7 @@ public class FlightBooking extends JFrame {
 		months.setBounds(163, 58, 116, 27);
 		contentPane.add(months);
 		months.setModel(monthNames);
-
+		
 		monthNames.addElement("January");
 		monthNames.addElement("February");
 		monthNames.addElement("March");
@@ -167,6 +180,7 @@ public class FlightBooking extends JFrame {
 		lblDay.setBounds(291, 62, 38, 16);
 		contentPane.add(lblDay);
 
+		
 		day = new JTextField();
 		day.setText("23");
 		day.setBounds(331, 57, 50, 26);
@@ -192,13 +206,10 @@ public class FlightBooking extends JFrame {
 		fareButtonGroup.add(touristTicket);
 		touristTicket.setBounds(278, 238, 77, 23);
 		contentPane.add(touristTicket);
-
+		//HEMEN ALDAKETAK: db Ireki eta hegaldien bilaketa
 		lookforFlights = new JButton("Look for Concrete Flights");
 		lookforFlights.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// if (db.hasinfo() == true) {
-				// db.eraberritu();
-				// }
 				bookFlight.setEnabled(true);
 				flightInfo.clear();
 				flightInfo_c.removeAllElements();
@@ -224,7 +235,6 @@ public class FlightBooking extends JFrame {
 				} else {
 					concreteFlightCollection = businessLogic.getConcreteFlights(((String) dCities.getSelectedItem()),
 							((String) aCities.getSelectedItem()), date);
-
 				}
 				System.out.println("Tamaina: " + concreteFlightCollection.size());
 				Iterator<ConcreteFlight> flights = concreteFlightCollection.iterator();
@@ -233,10 +243,11 @@ public class FlightBooking extends JFrame {
 					cf = flights.next();
 					try {
 						 datuBasekoCF = db.findConcreteFlight(cf);
-						//  cfa[i]=cf.concreteFlightCode;
-						//  cfa[i+1]=cf;
 						if (datuBasekoCF != null) {
 							flightInfo_c.addElement(datuBasekoCF);
+						}else {
+							db.gordeHegaldia(cf);
+							flightInfo_c.addElement(cf);
 						}
 					} catch (Exception e1) {
 						e1.printStackTrace();
@@ -256,72 +267,10 @@ public class FlightBooking extends JFrame {
 		contentPane.add(jLabelResult);
 
 		flightList_1 = new JComboBox();
-		// flightList_1.addItemListener(new ItemListener() {
-		/**
-		 * public void itemStateChanged(ItemEvent e) {
-		 * if(e.getStateChange()==e.ITEM_STATE_CHANGED) { selectedConcreteFlight =
-		 * (ConcreteFlight) flightList_1.getSelectedItem(); bookFlight.setEnabled(true);
-		 * bookFlight.setText("Book: "+selectedConcreteFlight);
-		 * 
-		 * if (selectedConcreteFlight != null) { if
-		 * (selectedConcreteFlight.getBussinesNumber() <= 0) {
-		 * bussinesTicket.setEnabled(false); } else if
-		 * (selectedConcreteFlight.getBussinesNumber() > 0) {
-		 * bussinesTicket.setEnabled(true); } if
-		 * (selectedConcreteFlight.getFirstNumber() <= 0) {
-		 * firstTicket.setEnabled(false); } else if
-		 * (selectedConcreteFlight.getFirstNumber() > 0) { firstTicket.setEnabled(true);
-		 * } if (selectedConcreteFlight.getTouristNumber() <= 0) {
-		 * touristTicket.setEnabled(false); } else if
-		 * (selectedConcreteFlight.getTouristNumber() > 0) {
-		 * touristTicket.setEnabled(true); } } }else { return; } } });
-		 **/
 		flightList_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-
-				if (flightList_1.getSelectedItem() != null) {
-					/*
-						
-					
-					*/
-					/**
-					 * String banatu = (String) flightList_1.getSelectedItem(); String [] banatu1 =
-					 * banatu.split("/"); String [] banatu2 = banatu1[2].split("-"); String []
-					 * banatu3 = banatu1[5].split("-->"); selectedConcreteFlight = new
-					 * ConcreteFlight(banatu1[1],
-					 * newDate(Integer.parseInt(banatu2[1]),Integer.parseInt(banatu1[3]),
-					 * Integer.parseInt(banatu1[4])), Integer.parseInt(banatu3[1]),
-					 * Integer.parseInt(banatu1[6]), Integer.parseInt(banatu1[7]), banatu3[0], new
-					 * Flight(banatu1[0],banatu1[1], banatu1[2])); selectedConcreteFlight =
-					 * db.findConcreteFlightByDetails(selectedConcreteFlight);
-					 */
-					selectedConcreteFlight = (ConcreteFlight) flightList_1.getSelectedItem();
 					if (flightList_1.getSelectedItem() != null) {
-						// String selectedItem = (String) flightList_1.getSelectedItem();
-						// // Parse the selected item to extract flight details
-						// String[] parts = selectedItem.split("-->");
-						// String[] seatCounts = parts[1].split("/");
-						// String[] dateParts = parts[0].split("/");
-
-						// Create a temporary ConcreteFlight object to find the exact match in the
-						// database
-						// ConcreteFlight tempCF = new ConcreteFlight(dateParts[0], // Flight ID
-						// 		newDate(Integer.parseInt(dateParts[1]), Integer.parseInt(dateParts[2]) - 1,
-						// 				Integer.parseInt(dateParts[3])),
-						// 		Integer.parseInt(seatCounts[0]), Integer.parseInt(seatCounts[1]),
-						// 		Integer.parseInt(seatCounts[2]), dateParts[4], // Time
-						// 		new Flight(dateParts[5], dateParts[6], dateParts[7]));
-
-						// Find the exact ConcreteFlight object in the database
-					//	selectedConcreteFlight = db.findConcreteFlightByDetails(tempCF);
-
-						// // Enable/disable radio buttons based on seat availability
-						// if (selectedConcreteFlight != null) {
-						// 	bussinesTicket.setEnabled(selectedConcreteFlight.getBussinesNumber() > 0);
-						// 	firstTicket.setEnabled(selectedConcreteFlight.getFirstNumber() > 0);
-						// 	touristTicket.setEnabled(selectedConcreteFlight.getTouristNumber() > 0);
-						// }
-
+						selectedConcreteFlight = (ConcreteFlight) flightList_1.getSelectedItem();
 						bookFlight.setText("Book: " + selectedConcreteFlight.toString());
 
 						if (selectedConcreteFlight != null) {
@@ -342,7 +291,6 @@ public class FlightBooking extends JFrame {
 							}
 						}
 					}
-				}
 			}
 		});
 
@@ -350,7 +298,7 @@ public class FlightBooking extends JFrame {
 		flightListScrollPane.setBounds(new Rectangle(64, 159, 336, 71));
 		flightListScrollPane.setViewportView(flightList_1);
 		contentPane.add(flightListScrollPane);
-
+		//HEMEN ALDAKETAK Db-an get egin hegaldia berritzeko
 		bookFlight = new JButton("");
 		bookFlight.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -361,6 +309,7 @@ public class FlightBooking extends JFrame {
 				if (bussinesTicket.isSelected()) {
 					num = selectedConcreteFlight.getBussinesNumber();
 					if (num > 0) {
+						aldatu = true;
 						selectedConcreteFlight.setBusinessNumber(num - 1);
 						cff = db.changeConcreteFlight(selectedConcreteFlight, "business", num - 1);
 					} else
@@ -369,6 +318,7 @@ public class FlightBooking extends JFrame {
 				if (firstTicket.isSelected()) {
 					num = selectedConcreteFlight.getFirstNumber();
 					if (num > 0) {
+						aldatu = true;
 						selectedConcreteFlight.setFirstNumber(num - 1);
 						cff = db.changeConcreteFlight(selectedConcreteFlight, "first", num - 1);
 					} else
@@ -377,6 +327,7 @@ public class FlightBooking extends JFrame {
 				if (touristTicket.isSelected()) {
 					num = selectedConcreteFlight.getTouristNumber();
 					if (num > 0) {
+						aldatu = true;
 						selectedConcreteFlight.setTouristNumber(num - 1);
 						cff = db.changeConcreteFlight(selectedConcreteFlight, "tourist", num - 1);
 					} else
@@ -439,17 +390,10 @@ public class FlightBooking extends JFrame {
 
 		aCities = new JComboBox();
 		aCities.setBounds(95, 31, 247, 21);
-		/**
-		 * for(int i = 0; i<depart.getSize(); i++) { Iterator<String> it2 =
-		 * a1.getArrivalCitiesFrom(depart.getElementAt(i)).iterator();
-		 * while(it2.hasNext()) { s = it2.next(); if(arrive.getIndexOf(s)<0) {
-		 * arrive.addElement(s); } } }
-		 */
-		// arrive.addAll(a1.getArrivalCitiesFrom(s));
 		arrive.addListDataListener(flightList_1);
 		contentPane.add(aCities);
 		aCities.setModel(arrive);
 		aCities.setSelectedIndex(1);
-
+		
 	}
 }
