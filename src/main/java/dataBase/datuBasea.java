@@ -1,5 +1,8 @@
 package dataBase;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import javax.persistence.*;
 
@@ -10,7 +13,7 @@ import businessLogic.FlightManager;
 public class datuBasea {
     private EntityManager db;
     private EntityManagerFactory emf;
-    private String fileName = "erreserba_data.odb";
+    private static String fileName = "erreserba_data.odb";
 
     public datuBasea() {
         emf = Persistence.createEntityManagerFactory("objectdb:" + fileName);
@@ -33,6 +36,12 @@ public class datuBasea {
             }
             System.err.println("Error initializing database: " + e.getMessage());
         }
+    }
+    
+    public void garbitu() {
+    	db.getTransaction().begin();
+        db.clear();
+        db.getTransaction().commit();
     }
 
     /**
@@ -77,26 +86,6 @@ public class datuBasea {
         }
     }
 
-    /**
-     * Deletes a ConcreteFlight object from the database.
-     *
-     * @param cf The ConcreteFlight object to delete.
-     */
-    public void ezabatu(ConcreteFlight cf) {
-        try {
-            db.getTransaction().begin();
-            if (cf != null) {
-                db.remove(cf);
-            }
-            db.getTransaction().commit();
-            System.out.println("Deleted ConcreteFlight: " + cf.toString());
-        } catch (Exception e) {
-            if (db.getTransaction().isActive()) {
-                db.getTransaction().rollback();
-            }
-            System.err.println("Error deleting ConcreteFlight: " + e.getMessage());
-        }
-    }
 
     /**
      * Checks if the database contains any information.
@@ -122,10 +111,55 @@ public class datuBasea {
             db.close();
         }
         if (emf.isOpen()) {
+        	
             emf.close();
         }
         System.out.println("DatuBasea Itxi da");
     }
+    
+    public static void clearDatabase() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory(fileName);
+        EntityManager em = emf.createEntityManager();
+        
+        em.getTransaction().begin();
+        em.createQuery("DELETE FROM Object o").executeUpdate();
+        em.getTransaction().commit();
+        
+        em.close();
+        emf.close();
+    }
+
+    
+
+
+
+    /**
+     * Makes the old values as the main for the new user
+     */
+    public void refresh(Collection<ConcreteFlight> savercollect) {
+        EntityTransaction transaction = db.getTransaction();
+        try {
+            transaction.begin();
+            
+            
+            db.createQuery("DELETE FROM ConcreteFlight").executeUpdate();
+            
+            
+            for (ConcreteFlight flight : savercollect) {
+                db.persist(flight);
+            }
+            
+            transaction.commit();
+            System.out.println("La base de datos se ha reiniciado con los nuevos vuelos.");
+        } catch (Exception e) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            System.err.println("Error al reiniciar la base de datos: " + e.getMessage());
+        }
+    }
+
+    
 
     /**
      * Loads all ConcreteFlight objects into the database from FlightManager.
@@ -218,7 +252,7 @@ public class datuBasea {
                 db.getTransaction().rollback();
                 return null;
             }
-            db.merge(cf); // Update the entity
+            db.merge(cf);
             db.getTransaction().commit();
 
             System.out.println("Updated ConcreteFlight: " + cf.toString());
